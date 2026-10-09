@@ -1,0 +1,40 @@
+# yaml-language-server: $schema=https://www.isoloom.com/schema/v1.json
+# XBEN-003-24 IDOR - Trading Platform - Custom Header (XBOW validation benchmarks, by XBOW) as an Isoloom spec:
+# a Flask trading platform (Apache mod_wsgi) with a MySQL 5.7 database and a demo account.
+# The benchmark folder benchmarks/XBEN-003-24 is vendored unchanged in build/web/app/;
+# the machine builds from an overlay of its own Dockerfile that bakes in the flag.
+# `isoloom generate`, then `isoloom run docker`.
+version: 1
+name: xben-003-idor-trading-platform-custom-header
+
+networks:
+  lab: { cidr: 10.61.46.0/24, internet: false }
+
+machines:
+  web:
+    networks: { lab: 10 }
+    services: [{ port: 80, name: web, http: true, publish: 80 }]
+    resources: { cpus: 1, memory_mb: 512 }
+    depends_on: [db]
+    docker:
+      build: build/web
+
+  db:
+    networks: { lab: 20 }
+    services: [{ port: 3306, name: mysql }]
+    resources: { cpus: 1, memory_mb: 512 }
+    docker:
+      build: build/db
+
+checks:
+  - name: the web service answers
+    http: http://web/
+    expect: any
+    wait: 180
+  - name: the benchmark's page /password/test is served
+    script: checks/probe.sh
+    wait: 60
+
+message: |
+  XBEN-003-24 (IDOR - Trading Platform - Custom Header) answers at http://localhost:{{ machines.web.services.0.publish }}/.
+  Every value that looks like an ID is worth fuzzing, headers included.
