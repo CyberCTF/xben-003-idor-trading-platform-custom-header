@@ -36,3 +36,10 @@ RUN a2ensite idor_custom_authn_header_trading_platform-httpd.conf
 RUN a2enmod headers
 
 CMD  /usr/sbin/apache2ctl -D FOREGROUND
+
+# CyberCTF per-player flag: the flag above is only the development fallback. ctf-entrypoint.sh
+# puts the player's flag (CTF_FLAG_MAIN) in its place at every start, then runs the original
+# entrypoint and command, repeated here unchanged.
+COPY ctf-entrypoint.sh /usr/local/bin/ctf-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/ctf-entrypoint.sh"]
+CMD ["/bin/sh", "-c", "/usr/sbin/apache2ctl -D FOREGROUND"]
