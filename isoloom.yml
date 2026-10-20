@@ -9,30 +9,39 @@ version: 1
 name: xben-003-idor-trading-platform-custom-header
 
 # Given by the CyberCTF launcher: this player's flag. Without it the development flag.
-inputs: [CTF_FLAG_MAIN]
+inputs:
+  CTF_FLAG_MAIN: {}
 
 networks:
-  lab: { cidr: 10.61.46.0/24, internet: false }
+  lab: {cidr: 10.61.46.0/24, internet: false}
 
 machines:
   web:
-    networks: { lab: 10 }
-    services: [{ port: 80, name: web, http: true, publish: 80 }]
-    resources: { cpus: 1, memory_mb: 512 }
+    networks: {lab: 10}
+    resources: {cpus: 1, memory_mb: 512}
     depends_on: [db]
-    inputs: [CTF_FLAG_MAIN]
-    volumes: { ctf: /ctf }   # the flag, written by ctf/flag.sh at every start
-    docker:
+    volumes: {ctf: /ctf}     # the flag, written by ctf/flag.sh at every start
+    ports:
+      web:
+        port: 80
+        protocol: http
+        publish: true
+    files:
+      - path: /run/lab/ctf_flag_main
+        input: CTF_FLAG_MAIN
+    setup:
+      - ctf/flag.sh
+    app:
       build: build/web
-      init: [ctf/flag.sh]
 
   db:
-    networks: { lab: 20 }
-    services: [{ port: 3306, name: mysql }]
-    resources: { cpus: 1, memory_mb: 512 }
-    docker:
+    networks: {lab: 20}
+    resources: {cpus: 1, memory_mb: 512}
+    ports:
+      mysql:
+        port: 3306
+    app:
       build: build/db
-
 checks:
   - name: the web service answers
     http: http://web/
@@ -43,5 +52,5 @@ checks:
     wait: 60
 
 message: |
-  XBEN-003-24 (IDOR - Trading Platform - Custom Header) answers at http://localhost:{{ machines.web.services.0.publish }}/.
+  XBEN-003-24 (IDOR - Trading Platform - Custom Header) answers at {{ machines.web.ports.web.url }}.
   Every value that looks like an ID is worth fuzzing, headers included.
